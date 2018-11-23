@@ -8,12 +8,36 @@ void my_bcast(void* data, int count, MPI_Datatype datatype, int root,
 	MPI_Comm_size(communicator, &world_size);
 
 	if (world_rank == root) {
-		int i;
-		for (i = 0; i < world_size; i++) {
+		int i,k,m;
+		int n = (int)log2(world_size);
+		double mod = log2f(world_size);
+		for(i=0;i<n;i++)
+			for (k = 0; k < pow(2,i); k++)
+			{
+				//if (k != world_rank)
+				
+					std::cout << k + pow(2, i)<<std::endl;
+					MPI_Send(data, count, datatype, k+pow(2,i), 0, communicator);
+				
+			}
+		if (world_size - pow(2, n) !=0)
+		{
+			m = world_size - pow(2, n);
+				for (k =0; k < m; k++)
+				{
+					//if (k > n)
+
+					std::cout << k + pow(2, n) << std::endl;
+					MPI_Send(data, count, datatype, k+pow(2,n), 0, communicator);
+
+				}
+		}
+		/*for (i = 0; i < world_size; i++) {
 			if (i != world_rank) {
 				MPI_Send(data, count, datatype, i, 0, communicator);
 			}
-		}
+		}*/
+
 	}
 	else {
 		MPI_Recv(data, count, datatype, root, 0, communicator,
@@ -73,6 +97,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
+		std::cout << "what-" << ProcRank  << std::endl;
 		MPI_Recv(&vec[vecsize / (ProcNum*ProcRank)], vecsize / ProcNum, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 		std::cout << "recv-" << ProcRank << "<-0" << std::endl;
 
