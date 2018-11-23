@@ -2,6 +2,32 @@
 #include<iostream>
 #include<time.h>
 using namespace std;
+int* CreateRandVec(int size)
+{
+	int *mas = new int[size];
+	for (int i = 0; i<size; i++)
+	{
+		mas[i] = rand();
+		//cout << vec[i] << endl;
+	}
+	return mas;
+}
+int FindMax(int* mas, int size, int _ProcNum, int _ProcRank)
+{
+	int _max=0;
+	if ((size%_ProcNum) && (_ProcRank == _ProcNum - 1))
+	{
+		for (int i = (size / _ProcNum)*_ProcRank; i < size; i++)
+		{
+			if (mas[i] > _max) _max = mas[i];
+		}
+	}
+	for (int i = (size / _ProcNum)*_ProcRank; i < (size / _ProcNum)*(_ProcRank + 1); i++)
+	{
+		if (mas[i] > _max) _max = mas[i];
+	}
+	return _max;
+}
 int main(int argc, char *argv[])
 {
 	int n, ProcNum, ProcRank, *vec, max,_max;
@@ -9,12 +35,7 @@ int main(int argc, char *argv[])
 	double time = 0.0;
 	MPI_Status status;
 	srand(1);
-	vec = new int[vecsize];
-	for (int i = 0; i < vecsize; i++)
-	{
-		vec[i] = rand();
-		//cout << vec[i] << endl;
-	}
+	vec=CreateRandVec(vecsize);
 	vec[9999] = 999999999;
 	MPI_Init(&argc, &argv);
 	time = MPI_Wtime();
@@ -40,7 +61,7 @@ int main(int argc, char *argv[])
 	}
 	_max = vec[0];
 	cout  <<"working-"<< ProcRank << endl;
-	if ((vecsize%ProcNum)&&(ProcRank==ProcNum-1))
+	/*if ((vecsize%ProcNum)&&(ProcRank==ProcNum-1))
 	{
 		for (int i = (vecsize / ProcNum)*ProcRank; i < vecsize; i++)
 		{
@@ -50,12 +71,13 @@ int main(int argc, char *argv[])
 	for (int i = (vecsize/ProcNum)*ProcRank; i < (vecsize / ProcNum)*(ProcRank+1); i++)
 	{
 		if (vec[i] > _max) _max = vec[i];
-	}
+	}*/
+	_max = FindMax(vec, vecsize, ProcNum, ProcRank);
 	MPI_Reduce(&_max, &max, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
 	time = MPI_Wtime() - time;
 	MPI_Finalize();
-	cout <<ProcRank<<"max="<< max << endl;
-	cout <<ProcRank << "_max=" << _max << endl;
+	cout <<"max="<< max << endl;
+	//cout <<ProcRank << "_max=" << _max << endl;
 	cout << "time=" << time << endl;
 	return 0;
 }
