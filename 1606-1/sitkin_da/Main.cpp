@@ -30,8 +30,9 @@ int FindMax(int* mas, int size, int _ProcNum, int _ProcRank)
 }
 int main(int argc, char *argv[])
 {
-	int n, ProcNum, ProcRank, *vec, max,_max;
-	int vecsize = 99900000;
+	int n, ProcNum, ProcRank, *vec, *buf, max,_max;
+	int vecsize = atoi (argv[1]);
+	//cout << argv[0] << argv[1];// << argv[2] << argv[3];
 	double time = 0.0;
 	MPI_Status status;
 	srand(1);
@@ -47,6 +48,8 @@ int main(int argc, char *argv[])
 	cout << "Bcast-" <<ProcRank<< endl;
 	if (ProcRank == 0)
 	{
+		vec = CreateRandVec(vecsize);
+		vec[9999] = 999999999;
 		for (int i = 1; i < ProcNum; i++)
 		{
 			MPI_Send(&vec[vecsize / ProcNum*i], vecsize / ProcNum, MPI_INT, i, 0, MPI_COMM_WORLD);
