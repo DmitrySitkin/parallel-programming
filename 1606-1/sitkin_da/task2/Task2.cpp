@@ -2,47 +2,80 @@
 #include<iostream>
 #include <ctime>
 using namespace std;
-void my_bcast(void* data, 
-	int count, 
-	MPI_Datatype datatype, 
-	int root,
-	MPI_Comm communicator)
+int powTwo(int proc) {
+	int res = 0;
+	while (proc != 0) {
+		proc = proc >> 1;
+		res++;
+	}
+	return res;
+}
+int twoin(int pow) {
+	int res = 1;
+	while (pow != 0) {
+		res << 1;
+		pow--;
+	}
+	return res;
+}
+void my_bcast(void* data, int count, MPI_Datatype datatype, int root, MPI_Comm communicator)
 {
+	int currRank;
 	int world_rank;
-	MPI_Comm_rank(communicator, &world_rank);
 	int world_size;
+	int tut;
+
+	MPI_Status status;
+
 	MPI_Comm_size(communicator, &world_size);
+	MPI_Comm_rank(communicator, &currRank);
 
-	if (world_rank == root) {
-		int i,k,m;
-		int n = (int)log2(world_size);
-		double mod = log2f(world_size);
-		for(i=0;i<n;i++)
-			for (k = 0; k < pow(2,i); k++)
-			{
-				//if (k != world_rank)
-				
-					//std::cout << k + pow(2, i)<<std::endl;
-					MPI_Send(data, count, datatype, k+pow(2,i), 0, communicator);
-				
-			}
-		if (world_size - pow(2, n) !=0)
-		{
-			m = world_size - pow(2, n);
-				for (k =0; k < m; k++)
-				{
-					//if (k > n)
+	//if (world_rank == root) {
+	//	int i, k, m;
+	//	int n = (int)log2(world_size);
+	//	double mod = log2f(world_size);
+	//	for (i = 0; i<n; i++)
+	//		for (k = 0; k < pow(2, i); k++)
+	//		{
+	//			//if (k != world_rank)
 
-				//	std::cout << k + pow(2, n) << std::endl;
-					MPI_Send(data, count, datatype, k+pow(2,n), 0, communicator);
+	//			//std::cout << k + pow(2, i)<<std::endl;
+	//			MPI_Send(data, count, datatype, k + pow(2, i), 0, communicator);
 
-				}
-		}
+	//		}
+	//	if (world_size - pow(2, n) != 0)
+	//	{
+	//		m = world_size - pow(2, n);
+	//		for (k = 0; k < m; k++)
+	//		{
+	//			//if (k > n)
+
+	//			//	std::cout << k + pow(2, n) << std::endl;
+	//			MPI_Send(data, count, datatype, k + pow(2, n), 0, communicator);
+
+	//		}
+	//	}
+	//}
+
+	if (currRank != root) {
+		MPI_Recv(data, count, datatype, MPI_ANY_SOURCE, MPI_ANY_TAG, communicator, &status);
 	}
 	else {
-		MPI_Recv(data, count, datatype, root, 0, communicator,
-			MPI_STATUS_IGNORE);
+		if (root != 0) {
+			MPI_Send(data, count, datatype, 0, 0, communicator);
+		}
 	}
+
+	
+
+
+	for (int i = powTwo(currRank); (currRank | (1 << i)) < world_size; i++) {
+		if ((currRank | (1 << i)) != root)
+			MPI_Send(data, count, datatype, currRank | (1 << i), 0, communicator);
+	}
+
+
+
 }
 void FillingArray(double array[], int n)
 {
@@ -71,7 +104,7 @@ int main(int argc, char **argv)
 		time = MPI_Wtime();
 	}
 	MPI_Bcast(&vecsize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Barrier(MPI_COMM_WORLD);
+	//MPI_Barrier(MPI_COMM_WORLD);
 	if (ProcRank == 0)
 	{
 		time = MPI_Wtime()-time;
@@ -80,8 +113,8 @@ int main(int argc, char **argv)
 	{
 		time1 = MPI_Wtime();
 	}
-	//my_bcast(&vecsize, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Barrier(MPI_COMM_WORLD);
+	my_bcast(&vecsize, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	//MPI_Barrier(MPI_COMM_WORLD);
 	if (ProcRank == 0)
 	{
 		time1 = MPI_Wtime() - time1;
@@ -128,7 +161,7 @@ int main(int argc, char **argv)
 		if (recbuf[i] > max) max = recbuf[i];
 	}
 
-	MPI_Reduce(&max, &totalMax, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); 
+	MPI_Reduce(&max, &totalMax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD); 
 	tfinish = MPI_Wtime();
 	double tstart1;
 	if (ProcRank == 0)
